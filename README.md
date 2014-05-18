@@ -2,7 +2,7 @@ Finger-detection
 ================
 
 A Linux-based application for live motion 
-gesture recognition using webcam input in python. This 
+gesture recognition using webcam input in C++. This 
 application uses the webcam to detect gesture made by the 
 user and perform basic operations accordingly. The user has to 
 perform a particular gesture. The webcam captures this and 
