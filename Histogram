@@ -1,0 +1,163 @@
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include <cv.h>
+#include <highgui.h>
+#include <iostream>
+#include <opencv2/core/core.hpp>
+
+using namespace cv;
+using namespace std;
+
+/// Global Variables
+Mat src; Mat hsv; 
+MatND backproj;
+MatND dst ; MatND dst1;
+
+vector<vector<Point> > contours;
+  vector<Vec4i> hierarchy;
+
+int thresh = 100;
+int max_thresh = 255;
+RNG rng(12345);
+
+
+void thresh_callback(int, void* ); 
+
+int findBiggestContour(vector<vector<Point> > contours)
+{ int indexOfBiggestContour = -1; 
+int sizeOfBiggestContour = 0; 
+for (int i = 0; i < contours.size(); i++)
+  { if(contours[i].size() > sizeOfBiggestContour)
+     { sizeOfBiggestContour = contours[i].size(); indexOfBiggestContour = i; } 
+  } 
+ return indexOfBiggestContour; 
+}
+/*
+void Threshold_Demo( int, void* )
+{
+   threshold( backproj, dst, threshold_value, max_BINARY_value,THRESH_BINARY_INV);
+
+  imshow( "Thresholded" ,dst );
+  
+}
+*/
+
+
+int main( int argc, char** argv )
+{
+	
+	if( argc != 2 || !(src=imread(argv[1], 1)).data )
+	    return -1;
+	
+        
+        
+	Mat hand ; 
+  /// Read the image
+  hand = imread( argv[1], 1 );
+  
+  cvtColor( hand, hand, COLOR_BGR2HSV );
+  
+ 
+   
+  MatND hist;
+  int h_bins = 30; int s_bins = 32;
+  int histSize[] = { h_bins, s_bins };
+
+  float h_range[] = { 0, 180 };
+  float s_range[] = { 0, 256 };
+  const float* ranges[] = { h_range, s_range };
+
+  int channels[] = { 0, 1 };
+  
+    /// Get the Histogram and normalize it
+  calcHist( &hand, 1, channels, Mat(), hist, 2, histSize, ranges, true, false );
+
+  normalize( hist, hist, 0, 255, NORM_MINMAX, -1, Mat() );
+  
+  VideoCapture capture;
+ capture.open(0);
+  
+   if (!capture.isOpened())  // if not success, exit program
+    {
+    cout  << "Cannot open the video file" << endl;
+        return -1;
+    }
+
+ namedWindow("Source",CV_WINDOW_AUTOSIZE);
+ namedWindow("BackProj",CV_WINDOW_AUTOSIZE);
+  
+  while(1){
+	  
+		capture.read(src);
+		
+		cvtColor( src, hsv, COLOR_BGR2HSV );
+		
+		  
+  calcBackProject( &hsv, 1, channels, hist, backproj, ranges, 1, true );
+
+  /// Draw the backproj
+  
+     imshow( "BackProj", backproj );
+     
+    
+     
+     bitwise_not ( backproj, dst );
+     
+     imshow( "Yoyo", dst );
+     
+     /*  createTrackbar( trackbar_value,
+                  "BackProj", &threshold_value,
+                  max_value, Threshold_Demo ); */
+                  
+         threshold( dst, dst1, 254, 255,THRESH_BINARY);
+         
+         
+                  
+          imshow( "Yoyo1", dst1);
+
+     
+  thresh_callback( 0, 0 );
+  
+  
+       imshow("Source", src );
+     
+    if (waitKey(30) >= 0)
+break;
+  
+
+}
+
+ return 0; 
+  
+}
+
+void thresh_callback(int, void* )
+{
+  Mat canny_output;
+  
+
+  /// Detect edges using canny
+  Canny( dst1, canny_output, thresh, thresh*2, 3 );
+  /// Find contours
+  findContours( canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+   int s = findBiggestContour(contours);
+
+  /// Draw contours
+  Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
+  /*for( int i = 0; i< contours.size(); i++ )
+     {
+       Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+       drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
+      
+     }*/
+   Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+       drawContours( drawing, contours, s, color, 2, 8, hierarchy, 0, Point() );  
+     
+
+  /// Show in a window
+  namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
+  imshow( "Contours", drawing );
+  
+  
+ }
+
