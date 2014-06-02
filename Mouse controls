@@ -1,0 +1,276 @@
+#include "opencv2/opencv.hpp"
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/video/background_segm.hpp>
+//C
+#include <stdio.h>
+//C++
+#include <iostream>
+#include <sstream>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+
+
+using namespace cv ;
+using namespace std;
+
+ int iLowH = 0;
+int iHighH = 179;
+
+int iLowS = 0; 
+int iHighS = 255;
+
+int iLowV = 0;
+int iHighV = 255;
+
+RNG rng(12345);
+
+
+double compare (Mat &image , Mat &img) {
+	
+	double d = matchShapes(image,img,CV_CONTOURS_MATCH_I1,0);
+	
+	return d ; }
+
+void mousemove(int &x_pos, int &y_pos)
+{
+    ///Strings that will contain the conversions
+    string xcord; string ycord;
+
+    ///These are buffers or something? I don't really know... lol.
+    stringstream sstr; stringstream sstr2;
+
+    ///Conversion to regular string happens here
+    sstr<<3*x_pos;
+    xcord = sstr.str();
+    sstr2<<3*y_pos;
+    ycord = sstr2.str();
+
+    ///Getting the command string
+    string command = "xdotool mousemove " + xcord + " " + ycord;
+
+    ///Converting command string to a form that system() accepts.
+    const char *com = command.c_str();
+    system(com);
+}
+
+void morph (Mat &red) 
+{
+	
+	 Mat erodeElement = getStructuringElement( MORPH_RECT,Size(1,1));
+    //dilate with larger element so make sure object is nicely visible
+	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(1,1));
+
+ erode(red,red,erodeElement);
+	    erode(red,red,erodeElement);
+    erode(red,red,erodeElement);
+	    erode(red,red,erodeElement);erode(red,red,erodeElement);
+	    erode(red,red,erodeElement);
+
+	   dilate(red,red,dilateElement);
+	    dilate(red,red,dilateElement);
+	     dilate(red,red,dilateElement);
+	    dilate(red,red,dilateElement);
+	     dilate(red,red,dilateElement);
+	    dilate(red,red,dilateElement);
+}
+
+int main(int argc, const char *argv[]) {
+	
+	
+	VideoCapture cap(0);
+	
+	
+	// namedWindow("Control", CV_WINDOW_AUTOSIZE); 
+	namedWindow("src", CV_WINDOW_NORMAL); 
+	namedWindow("red", CV_WINDOW_NORMAL); 
+	
+/*cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+cvCreateTrackbar("HighH", "Control", &iHighH, 179);
+
+cvCreateTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+cvCreateTrackbar("HighS", "Control", &iHighS, 255);
+
+cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+cvCreateTrackbar("HighV", "Control", &iHighV, 255); */
+
+ Mat imgTmp;
+cap.read(imgTmp); 
+
+ Mat imgLines = Mat::zeros( imgTmp.size(), CV_8UC3);
+	
+	int lastx =-10;
+	int lasty =-10;
+    int posX =0;
+    int posY=0;
+    
+    int j=0;
+    
+     int n;
+	   cout << "What do you want do do ?" << endl ;
+	   
+	   cin >> n;
+	   
+	   if (n==1) {
+	
+	 
+	while(1) {
+		Mat src ;
+		
+		cap.read(src) ;
+		
+		flip(src, src, 1);
+		
+		cvtColor(src, src, COLOR_BGR2HSV);
+		
+		Mat red ;	
+				
+		inRange(src,Scalar(160, 70, 60), Scalar(255, 255, 255),red);
+       
+	   morph(red) ;
+	   
+	  
+	   
+	    
+     Moments m = moments(red,true);
+
+     double dM01 = m.m01;
+     double dM10 = m.m10;
+     double dArea = m.m00;
+	   
+	   
+ 
+       
+     
+      // if the area <= 10000, I consider that the there are no object in the image and it's because of the noise, the area is not zero 
+     if (dArea > 1000)
+     
+     {    posX = dM10 / dArea;
+          posY = dM01 / dArea; 
+		 if (abs(lastx-posX)<=6.5 && abs(lasty-posY)<=6.5) ;
+        else
+        {
+        
+        mousemove(posX ,posY );
+        
+        lastx=posX ;
+        lasty=posY ;
+	    }
+
+     }
+     
+     
+     imshow("src",src);
+		imshow("red",red) ;
+		
+		waitKey(1);
+	}
+	
+}
+
+else if(n==2) {
+	
+	
+	Mat test;Mat test_gray ;
+    test = imread("test.jpg", CV_LOAD_IMAGE_COLOR); 
+    
+     cvtColor( test, test_gray, CV_RGB2GRAY );
+  /*   vector<vector<Point> > contours;
+  vector<Vec4i> hierarchy; 
+  
+  
+   
+    threshold(test_gray, test_gray,30, 255,CV_THRESH_BINARY );
+       
+        findContours( test_gray, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+        
+         Mat drawing = Mat::zeros( test.size(), CV_8UC3 );
+  for( int i = 0; i< contours.size(); i++ )
+     {
+       Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+       drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
+     }
+
+  /// Show in a window
+  namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
+  imshow( "Contours", drawing );
+  
+  waitKey(10000); */
+        
+	
+	while(1) {
+		Mat src ;
+		
+		cap.read(src) ;
+		
+		flip(src, src, 1);
+		
+		cvtColor(src, src, COLOR_BGR2HSV);
+		
+		Mat red ;	
+				
+		inRange(src,Scalar(160, 70, 60), Scalar(255, 255, 255),red);
+       
+	   morph(red) ;
+	   
+	     
+	    
+     Moments m = moments(red,true);
+
+     double dM01 = m.m01;
+     double dM10 = m.m10;
+     double dArea = m.m00;
+	   
+	   
+	if (dArea > 1000)
+        {  
+			 posX = dM10 / dArea;
+          posY = dM01 / dArea; 
+			
+			if (lastx >= 0 && lasty >= 0 && posX >= 0 && posY >= 0)
+          {
+
+             line(imgLines, Point(posX, posY), Point(lastx, lasty), Scalar(0,0,255), 2);
+           }
+           
+         if (abs(lastx-posX)<=2 && abs(lasty-posY)<=2) { 
+			 j ++ ;
+			 if (j == 30) {   imwrite("test1.jpg" , imgLines) ; break ; }
+		 }
+         
+                          
+
+        lastx = posX;
+        lasty = posY;
+        }
+        
+      imshow ( " lines " ,imgLines ) ;
+     
+		
+     
+		
+		imshow("src",src);
+		imshow("red",red) ;
+		
+		waitKey(1);
+		
+	}
+	
+	Mat yoyo ;
+yoyo = imread("test1.jpg", CV_LOAD_IMAGE_COLOR); 
+    
+    cvtColor( yoyo, yoyo, CV_RGB2GRAY );
+    /* vector<vector<Point> > contours1;
+  vector<Vec4i> hierarchy1; 
+  
+	
+    threshold(yoyo, yoyo,30, 255,CV_THRESH_BINARY );
+	
+	findContours( yoyo, contours1, hierarchy1, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) ); */
+	
+	cout << matchShapes(test_gray,yoyo,CV_CONTOURS_MATCH_I1,0) << endl ;
+	waitKey(1000000);
+	
+}
+
+	
+}
